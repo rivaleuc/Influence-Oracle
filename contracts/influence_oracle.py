@@ -94,26 +94,61 @@ class InfluenceOracle(gl.Contract):
             sections = []
             sources = []
 
-            # ---- Twitter / X (best-effort, public is restricted) ----
+            # ---- Twitter / X data via multiple fallbacks ----
+            # x.com and twitter.com block public scraping behind auth walls and
+            # nitter mirrors are unreliable. Web archive snapshots and search
+            # engine HTML are public, stable, and require no auth.
             tw_data = ""
-            for url in (
-                f"https://nitter.net/{twitter_handle}",
-                f"https://twitter.com/{twitter_handle}",
-                f"https://x.com/{twitter_handle}",
-            ):
+            tw_source = ""
+
+            archive_attempts = [
+                f"https://web.archive.org/web/2024/https://x.com/{twitter_handle}",
+                f"https://web.archive.org/web/2024/https://twitter.com/{twitter_handle}",
+                f"https://web.archive.org/web/2023/https://twitter.com/{twitter_handle}",
+            ]
+            for url in archive_attempts:
                 try:
-                    tw_data = gl.nondet.web.render(url, mode="html")
-                    if tw_data and len(tw_data) > 500:
+                    raw = gl.nondet.web.render(url, mode="html")
+                    if raw and len(raw) > 1000:
+                        tw_data = raw
+                        tw_source = "twitter_wayback"
                         break
                 except Exception:
                     continue
 
+            if not tw_data:
+                try:
+                    raw = gl.nondet.web.render(
+                        f"https://html.duckduckgo.com/html/?q=site%3Atwitter.com+%40{twitter_handle}",
+                        mode="html",
+                    )
+                    if raw and len(raw) > 1000:
+                        tw_data = raw
+                        tw_source = "twitter_search"
+                except Exception:
+                    pass
+
+            if not tw_data:
+                for url in (
+                    f"https://nitter.net/{twitter_handle}",
+                    f"https://twitter.com/{twitter_handle}",
+                    f"https://x.com/{twitter_handle}",
+                ):
+                    try:
+                        raw = gl.nondet.web.render(url, mode="html")
+                        if raw and len(raw) > 500:
+                            tw_data = raw
+                            tw_source = "twitter_live"
+                            break
+                    except Exception:
+                        continue
+
             if tw_data:
-                sections.append(f"TWITTER/X PROFILE (@{twitter_handle}):\n{tw_data[:4000]}")
-                sources.append("twitter")
+                sections.append(f"TWITTER/X SIGNAL FOR @{twitter_handle} (via {tw_source}):\n{tw_data[:5000]}")
+                sources.append(tw_source)
             else:
                 sections.append(
-                    f"TWITTER/X HANDLE PROVIDED: @{twitter_handle} (profile fetch unavailable — "
+                    f"TWITTER/X HANDLE PROVIDED: @{twitter_handle} (no public source returned data — "
                     f"reduce confidence in Twitter-specific signals; do not assume the account is fake)"
                 )
                 sources.append("twitter_claimed")

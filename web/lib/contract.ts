@@ -5,7 +5,7 @@ import { testnetBradbury } from "genlayer-js/chains";
 
 // Filled in once we deploy on Bradbury.
 export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
-  "0xb7385882C5BB128BEBe7c7EA853599880980aE3b") as `0x${string}`;
+  "0xf2e8f6898A89ED20699E47A68f80adF8C11bFcDa") as `0x${string}`;
 
 export const FAUCET_URL = "https://testnet-faucet.genlayer.foundation/";
 export const EXPLORER_URL = "https://explorer-bradbury.genlayer.com";
