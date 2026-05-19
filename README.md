@@ -29,7 +29,7 @@ A traditional smart contract cannot read social media, weigh qualitative signals
 ## Network
 
 - **Network:** GenLayer Bradbury Testnet (chain `4221`)
-- **Contract:** [`0xf2e8f6898A89ED20699E47A68f80adF8C11bFcDa`](https://explorer-bradbury.genlayer.com/address/0xf2e8f6898A89ED20699E47A68f80adF8C11bFcDa)
+- **Contract:** [`0x70c74D4aC75b192479f6523D2E0931F3E5Dc9eF3`](https://explorer-bradbury.genlayer.com/address/0x70c74D4aC75b192479f6523D2E0931F3E5Dc9eF3)
 
 ## Data sources
 

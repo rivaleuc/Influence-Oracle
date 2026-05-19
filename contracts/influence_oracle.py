@@ -95,26 +95,44 @@ class InfluenceOracle(gl.Contract):
             sources = []
 
             # ---- Twitter / X data via multiple fallbacks ----
-            # x.com and twitter.com block public scraping behind auth walls and
-            # nitter mirrors are unreliable. Web archive snapshots and search
-            # engine HTML are public, stable, and require no auth.
+            # X/Twitter actively blocks public scraping behind auth walls.
+            # Jina Reader (r.jina.ai) is a free LLM-oriented proxy that
+            # renders JS, follows redirects, and returns clean markdown —
+            # purpose-built for exactly this case. Wayback and search
+            # follow as defense in depth.
             tw_data = ""
             tw_source = ""
 
-            archive_attempts = [
-                f"https://web.archive.org/web/2024/https://x.com/{twitter_handle}",
-                f"https://web.archive.org/web/2024/https://twitter.com/{twitter_handle}",
-                f"https://web.archive.org/web/2023/https://twitter.com/{twitter_handle}",
+            jina_attempts = [
+                f"https://r.jina.ai/https://x.com/{twitter_handle}",
+                f"https://r.jina.ai/https://twitter.com/{twitter_handle}",
+                f"https://r.jina.ai/https://nitter.net/{twitter_handle}",
             ]
-            for url in archive_attempts:
+            for url in jina_attempts:
                 try:
-                    raw = gl.nondet.web.render(url, mode="html")
-                    if raw and len(raw) > 1000:
+                    raw = gl.nondet.web.request(url, method="GET")
+                    if raw and len(raw) > 1500 and "login" not in raw[:500].lower():
                         tw_data = raw
-                        tw_source = "twitter_wayback"
+                        tw_source = "twitter_jina"
                         break
                 except Exception:
                     continue
+
+            if not tw_data:
+                archive_attempts = [
+                    f"https://web.archive.org/web/2024/https://x.com/{twitter_handle}",
+                    f"https://web.archive.org/web/2024/https://twitter.com/{twitter_handle}",
+                    f"https://web.archive.org/web/2023/https://twitter.com/{twitter_handle}",
+                ]
+                for url in archive_attempts:
+                    try:
+                        raw = gl.nondet.web.render(url, mode="html")
+                        if raw and len(raw) > 2000 and "Sorry" not in raw[:500]:
+                            tw_data = raw
+                            tw_source = "twitter_wayback"
+                            break
+                    except Exception:
+                        continue
 
             if not tw_data:
                 try:
@@ -127,21 +145,6 @@ class InfluenceOracle(gl.Contract):
                         tw_source = "twitter_search"
                 except Exception:
                     pass
-
-            if not tw_data:
-                for url in (
-                    f"https://nitter.net/{twitter_handle}",
-                    f"https://twitter.com/{twitter_handle}",
-                    f"https://x.com/{twitter_handle}",
-                ):
-                    try:
-                        raw = gl.nondet.web.render(url, mode="html")
-                        if raw and len(raw) > 500:
-                            tw_data = raw
-                            tw_source = "twitter_live"
-                            break
-                    except Exception:
-                        continue
 
             if tw_data:
                 sections.append(f"TWITTER/X SIGNAL FOR @{twitter_handle} (via {tw_source}):\n{tw_data[:5000]}")
