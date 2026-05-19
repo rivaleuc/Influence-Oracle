@@ -22,7 +22,6 @@ type Status =
 export default function Oracle() {
   const [account, setAccount] = useState<`0x${string}` | null>(null);
   const [twitter, setTwitter] = useState("");
-  const [github, setGithub] = useState("");
   const [website, setWebsite] = useState("");
   const [score, setScore] = useState<Score | null>(null);
   const [total, setTotal] = useState<number | null>(null);
@@ -51,7 +50,6 @@ export default function Oracle() {
       setScore(s);
       if (s.exists) {
         setStatus({ kind: "ok", msg: "Found cached score." });
-        if (s.github_handle) setGithub(s.github_handle);
         if (s.website_url) setWebsite(s.website_url);
       } else {
         setStatus({ kind: "ok", msg: "No cached score — click Analyze to compute one." });
@@ -75,7 +73,7 @@ export default function Oracle() {
         kind: "busy",
         msg: "Analyzing (multi-LLM consensus on Bradbury — usually 1–4 min)…",
       });
-      const tx = await analyze(account, twitter.trim(), github.trim(), website.trim());
+      const tx = await analyze(account, twitter.trim(), "", website.trim());
       await waitForReceipt(account, tx);
       const [s, t] = await Promise.all([
         getScore(twitter.trim()),
@@ -171,22 +169,13 @@ export default function Oracle() {
               value={twitter}
               onChange={setTwitter}
             />
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field
-                label="GitHub handle (optional)"
-                prefix="github.com/"
-                placeholder="vbuterin"
-                value={github}
-                onChange={setGithub}
-              />
-              <Field
-                label="Website (optional)"
-                prefix="https://"
-                placeholder="example.com"
-                value={website}
-                onChange={setWebsite}
-              />
-            </div>
+            <Field
+              label="Website (optional)"
+              prefix="https://"
+              placeholder="example.com"
+              value={website}
+              onChange={setWebsite}
+            />
             <div className="flex gap-3 pt-1">
               <button
                 onClick={handleLookup}
@@ -205,7 +194,7 @@ export default function Oracle() {
             </div>
             <p className="text-xs text-zinc-500">
               Twitter/X profile fetching is best-effort — public pages are increasingly restricted.
-              When that source is unavailable, the score is weighted toward GitHub and website,
+              When that source is unavailable, the score is weighted toward the website signal
               and the LLM flags lower confidence in its reasoning.
             </p>
           </div>
